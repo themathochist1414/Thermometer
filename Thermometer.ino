@@ -1,23 +1,16 @@
 // Global Variables
 const int sensorPin = A0;
-const float baselineTemp = 20;    // [degrees C]
 
-const int red = 6;                //     red LED on pin 6
-const int yellow = 5;             //  yellow LED on pin 5
-const int green = 4;              //   green LED on pin 4
-const int blueTop = 3;            // blueTop LED on pin 3
-const int blueBtm = 2;            // blueBtm LED on pin 2
+const int red = 8;                  // red LED on pin 8
+const int greatestPinNumber = 8;
 
 void setup() {
   // Open Serial port
   Serial.begin(9600);
+
+  TurnOffPins(greatestPinNumber);
   
-  // Initialize all pins to off
-  for (int pinNumber = 2; pinNumber < 7; pinNumber++){
-    pinMode(pinNumber, OUTPUT);
-    digitalWrite(pinNumber, LOW);
-  }
-  blinkLED(red);
+  BlinkLED(red);
   Serial.println("Arduino Starting Up...");
   
 }
@@ -34,51 +27,70 @@ void loop() {
   String message = "@Sensor Value:  " + String(sensorVal) + ", Volts:  " + String(voltage) + ", degrees C: " + String(temperature);
   Serial.println(message);
 
-  UpdateLEDs(temperature);
-  delay(10000); 
+  DisplayTempInBinary(temperature);
+  delay(500); 
 }
 
-void UpdateLEDs(float temperature){
-  if(temperature < baselineTemp-6){ 
-    // freezing tits off
-    digitalWrite(red, LOW);
-    digitalWrite(yellow, LOW);
-    digitalWrite(green, HIGH);
-    digitalWrite(blueTop, HIGH);
-    digitalWrite(blueBtm, HIGH);
-  } else if (temperature >= baselineTemp-6 && temperature < baselineTemp-2){
-    // cool
-    digitalWrite(red, LOW);
-    digitalWrite(yellow, LOW);
-    digitalWrite(green, HIGH);
-    digitalWrite(blueTop, HIGH);
-    digitalWrite(blueBtm, LOW);
-  } else if (temperature >= baselineTemp-2 && temperature < baselineTemp+2){
-    // comfy
-    digitalWrite(red, LOW);
-    digitalWrite(yellow, LOW);
-    digitalWrite(green, HIGH);
-    digitalWrite(blueTop, LOW);
-    digitalWrite(blueBtm, LOW);
-  } else if (temperature >= baselineTemp+2 && temperature < baselineTemp+6){
-    // on the warm side
-    digitalWrite(red, LOW);
-    digitalWrite(yellow, HIGH);
-    digitalWrite(green, HIGH);
-    digitalWrite(blueTop, LOW);
-    digitalWrite(blueBtm, LOW);
-  } else if (temperature >= baselineTemp+6 ){
-    // sweating balls off
-    digitalWrite(red, HIGH);
-    digitalWrite(yellow, HIGH);
-    digitalWrite(green, HIGH);
-    digitalWrite(blueTop, LOW);
-    digitalWrite(blueBtm, LOW);
+void DisplayTempInBinary(float temperature){
+  int rndTemp = round(temperature);
+  String rndTempStr = (String)rndTemp;
+  String binaryRep = "";
+  
+  // For Debugging
+  //Serial.println((String)temperature + " " + (String)rndTemp);
+
+  for (int n = greatestPinNumber - 2; n >=0; n--){
+    int pinNumber = greatestPinNumber - n;
+    int twoToTheN = exponentiateIntegers(2, n);
+    int remainder = rndTemp - twoToTheN;
+
+    /* // For Debugging
+    String nStr = (String)(n);
+    String pinNumberStr = (String)pinNumber;
+    String twoToTheNStr = (String)twoToTheN;
+    String remainderStr = (String)remainder;
+    */
+    
+    if ( remainder >=0 ){
+      rndTemp = rndTemp - twoToTheN;
+      digitalWrite(pinNumber, HIGH);
+      /* // For Debugging
+      rndTempStr = rndTemp;
+      Serial.println(rndTempStr + " - " + twoToTheNStr + " = " + remainderStr);
+      binaryRep = binaryRep + "1";
+      */
+    } else{
+      digitalWrite(pinNumber, LOW);
+      /* // For Debugging
+      Serial.println(rndTempStr + " - " + twoToTheNStr + " = " + remainderStr);
+      binaryRep = binaryRep + "0";
+      */
+    }
+    // For Debugging
+    //Serial.println(nStr + " " + pinNumberStr);
   }
+  // For Debugging
+  //Serial.println(rndTempStr + " " + binaryRep);
 }
-void blinkLED(int pinNum){
+
+void BlinkLED(int pinNum){
   digitalWrite(pinNum, HIGH);
   delay(500);
   digitalWrite(pinNum, LOW);
   delay(500);
+}
+
+void TurnOffPins(int greatestPinNumber){
+  for (int pinNumber = 2; pinNumber < greatestPinNumber; pinNumber++){
+      pinMode(pinNumber, OUTPUT);
+      digitalWrite(pinNumber, LOW);
+    }
+}
+
+int exponentiateIntegers(int x, int y){
+  int result = 1;
+  for (int n = 1; n <= y; n++){
+    result = result*x;
+  }
+  return result;
 }
