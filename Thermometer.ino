@@ -1,24 +1,24 @@
 // Global Variables
-const int sensorPin = A0;         // Pin number for input from thermistor
+const int sensorPin = A0;               // Pin number for input from thermistor
 
-const int leastPinNumber = 3;     // Lowest pin number used for 2^5 place value
-const int greatestPinNumber = 8;  // Greatest pin number used for 2^0 place value
-const int yellow = 2;             // Yellow LED on pin 2. 
+const int leastPinNum = 3;           // Lowest pin number used for 2^5 place value
+const int greatestPinNum = 8;        // Greatest pin number used for 2^0 place value
+const int yellow = 2;                   // Yellow LED on pin 2. 
+
+int serialPrintCounter = 0;             // Serial Print Counter
+const int serialPrintInterval = 15;     // Serial Print Interval in minutes if delay(60000) at end of loop()
 
 void setup() {
   // Open Serial port. Set Baud rate to 9600
   Serial.begin(9600);
-
-  TurnOffPins();
-  for (int n = greatestPinNumber; n>=yellow; n--)
-    blinkLED(n);
-
   // Send out startup phrase
   Serial.println("Arduino Starting Up...");
   
+  TurnOffPins();
+  for (int n = greatestPinNum; n>=yellow; n--)
+    blinkLED(n);
 }
 void loop() {
-  
   int sensorVal = analogRead(sensorPin); // Value read from thermistor
   /*
   * convert the ADC reading to voltage
@@ -33,21 +33,25 @@ void loop() {
    * This formula came from the Arduino Projects book
    */
   float temperature = (voltage - 0.5)*100;    // [degrees C]
-
-  // Print data to serial port
-  String message = "@Sensor Value:  " + String(sensorVal) + 
-                   ", Volts:  " + String(voltage) + 
-                   ", degrees C: " + String(temperature);
-  Serial.println(message);
-
+  int toSerialPort = serialPrintCounter % serialPrintInterval;
+  //Serial.println((String)toSerialPort);
+  if (toSerialPort == 0){
+    // Send message every serialPrintInterval minutes if delay(60000) at end of loop()
+    String message = "@Sensor Value:  " + String(sensorVal) + 
+                     ", Volts:  " + String(voltage) + 
+                     ", degrees C: " + String(temperature);
+    Serial.println(message);
+  }
+  
   // Update LED display
   displayInBinary(temperature);
 
-  // For debugging
+  // For debugging binary LED readout
   //countFromStartNumToEndNum(-63, 63);
   
-  // Wait for next reading
-  delay(900000);
+  // Wait to updaten LED display
+  delay(60000);
+  serialPrintCounter++;
 }
 
 /*
@@ -56,77 +60,84 @@ void loop() {
  *    OUTPUT - displays number to LEDs. Does not return anything to parent function
  */
 void displayInBinary(float inNum){
-  int inNumRnd = round(inNum);            // Round input number. LED display not setup to handle decimals
+  int inNumRnd = (int)inNum;            // Round down input number. LED display not setup to handle decimals
   int inNumRndCpy = inNumRnd;
+  /* For Debugging
   Serial.println(inNumRndCpy);
   //Serial.println((String)inNum + " " + (String)inNumRnd);
   String binaryRep = "";
   String inNumRndCpyStr = (String)inNumRndCpy;
+  */
   if (inNumRnd < 0) {
       Serial.println("Negative");
       digitalWrite(yellow, HIGH);
       inNumRnd = (-1)*inNumRnd;
+      /* // For Degbugging
       Serial.println(inNumRnd);
       binaryRep = binaryRep + "1";
+      */
     } else {
-      Serial.println("Positive");
       digitalWrite(yellow, LOW);
+      /* // For Debugging
+      Serial.println("Positive");
       binaryRep = binaryRep + "0";
+      */
     }
-   // For debugging 
+  /* // For debugging 
   String inNumRndStr = (String)inNumRnd;  
   Serial.println((String)inNumRndCpy + " " + inNumRndStr);
-
+  */
   // Find binary representation of inNum.
-  for (int n = greatestPinNumber - leastPinNumber; n >=0; n--){
-    int pinNumber = greatestPinNumber - n;
-    /*  Proof that pinNumber = greatestPinNumber - n
-     *      n = greatestPinNumber - leastPinNumber
-     *   => pinNumber = greatestPinNumber - n
-     *                 = greatestPinNumber - (greatestPinNumber - leastPinNumber)
-     *                 = leastPinNumber
+  for (int n = greatestPinNum - leastPinNum; n >=0; n--){
+    int pinNum = greatestPinNum - n;
+    /*  Proof that PinNum = greatestPinNum - n
+     *      n = greatestPinNum - leastPinNum
+     *   => PinNum = greatestPinNum - n
+     *                 = greatestPinNum - (greatestPinNum - leastPinNum)
+     *                 = leastPinNum
      *      n = 0
-     *   => pinNumber = greatestPinNumber - n
-     *                 = greatestPinNumber - 0
-     *                 = greatestPinNumber
-     *  For every k in  [ 1 , (greatestPinNumber - leastPinNumber) - 1 ]
-     *      n = greatestPinNumber - leastPinNumber - k // The minus k comes from n--
-     *   => pinNumber = greatestPinNumber - n
-     *                 = greatestPinNumber - (greatestPinNumber - leastPinNumber - k)
-     *                 = leastPinNumber + k
+     *   => PinNum = greatestPinNum - n
+     *                 = greatestPinNum - 0
+     *                 = greatestPinNum
+     *  For every k in  [ 1 , (greatestPinNum - leastPinNum) - 1 ]
+     *      n = greatestPinNum - leastPinNum - k // The minus k comes from n--
+     *   => PinNum = greatestPinNum - n
+     *                 = greatestPinNum - (greatestPinNum - leastPinNum - k)
+     *                 = leastPinNum + k
      */
     int twoToTheN = exponentiateIntegers(2, n); // 2^n
     int remainder = inNumRnd - twoToTheN;
+    
+    /* // For Debugging
     Serial.println(inNumRndStr + " " + twoToTheN);
-
-     // For Debugging
+    
     String nStr = (String)(n);
-    String pinNumberStr = (String)pinNumber;
+    String PinNumStr = (String)pinNum;
     String twoToTheNStr = (String)twoToTheN;
     String remainderStr = (String)remainder;
     Serial.println(twoToTheNStr);
     Serial.println(remainder);
-    
+    */
     if ( remainder >= 0 ){
-      // For Debugging
-      Serial.println(inNumRndStr + " - " + twoToTheNStr + " = " + remainderStr);
+      digitalWrite(pinNum, HIGH);
       inNumRnd = inNumRnd - twoToTheN;
+      /*// For Debugging
       inNumRndStr = inNumRnd;
-      digitalWrite(pinNumber, HIGH);
+      Serial.println(inNumRndStr + " - " + twoToTheNStr + " = " + remainderStr);
       binaryRep = binaryRep + "1";
-      
+      */
     } else{
-      digitalWrite(pinNumber, LOW);
-       // For Debugging
+      digitalWrite(pinNum, LOW);
+      /* // For Debugging
       Serial.println(inNumRndStr + " - " + twoToTheNStr + " = " + remainderStr);
       binaryRep = binaryRep + "0";
-      
+      */
     }
     // For Debugging
-    Serial.println(nStr + " " + pinNumberStr);
+    //Serial.println(nStr + " " + pinNumStr);
   }
   // For Debugging
-  Serial.println(inNumRndCpyStr + " " + binaryRep);
+  //Serial.println(inNumRndCpyStr + " " + binaryRep);
 }
 
 /*
@@ -145,13 +156,13 @@ void blinkLED(int pinNum){
 /*
  * Set all pins to output and set them to low
  *  INPUT - none
- * OUTPUT - set all pinNumbers from leastPinNumber to greatestPinNumber 
+ * OUTPUT - set all PinNums from leastPinNum to greatestPinNum 
  *          to output and turn them off
  */
 void TurnOffPins(){
-  for (int pinNumber = yellow; pinNumber <=  greatestPinNumber; pinNumber++){
-      pinMode(pinNumber, OUTPUT);
-      digitalWrite(pinNumber, LOW);
+  for (int pinNum = yellow; pinNum <=  greatestPinNum; pinNum++){
+      pinMode(pinNum, OUTPUT);
+      digitalWrite(pinNum, LOW);
     }
 }
 
