@@ -1,17 +1,17 @@
 // Global Variables
 const int sensorPin = A0;         // Pin number for input from thermistor
 
-const int leastPinNumber = 2;     // Lowest pin number used for 2^5 place value
-const int greatestPinNumber = 7;  // Greatest pin number used for 2^0 place value
-const int red = 9;                // Red LED on pin 9
+const int leastPinNumber = 3;     // Lowest pin number used for 2^5 place value
+const int greatestPinNumber = 8;  // Greatest pin number used for 2^0 place value
+const int yellow = 2;             // Yellow LED on pin 2. 
 
 void setup() {
   // Open Serial port. Set Baud rate to 9600
   Serial.begin(9600);
 
   TurnOffPins();
-  
-  blinkLED(red);
+  for (int n = greatestPinNumber; n>=yellow; n--)
+    blinkLED(n);
 
   // Send out startup phrase
   Serial.println("Arduino Starting Up...");
@@ -35,17 +35,19 @@ void loop() {
   float temperature = (voltage - 0.5)*100;    // [degrees C]
 
   // Print data to serial port
-  String message = "@Sensor Value:  " + String(sensorVal) + ", Volts:  " + String(voltage) + ", degrees C: " + String(temperature);
+  String message = "@Sensor Value:  " + String(sensorVal) + 
+                   ", Volts:  " + String(voltage) + 
+                   ", degrees C: " + String(temperature);
   Serial.println(message);
 
   // Update LED display
   displayInBinary(temperature);
 
+  // For debugging
+  //countFromStartNumToEndNum(-63, 63);
+  
   // Wait for next reading
   delay(900000);
-
-  // For debugging
-  //countUpFromZero(64);
 }
 
 /*
@@ -55,12 +57,25 @@ void loop() {
  */
 void displayInBinary(float inNum){
   int inNumRnd = round(inNum);            // Round input number. LED display not setup to handle decimals
-  /* // For debugging 
-  String inNumRndStr = (String)inNumRnd;  
+  int inNumRndCpy = inNumRnd;
+  Serial.println(inNumRndCpy);
+  //Serial.println((String)inNum + " " + (String)inNumRnd);
   String binaryRep = "";
-  
-  Serial.println((String)temperature + " " + (String)inNumRnd);
-  */
+  String inNumRndCpyStr = (String)inNumRndCpy;
+  if (inNumRnd < 0) {
+      Serial.println("Negative");
+      digitalWrite(yellow, HIGH);
+      inNumRnd = (-1)*inNumRnd;
+      Serial.println(inNumRnd);
+      binaryRep = binaryRep + "1";
+    } else {
+      Serial.println("Positive");
+      digitalWrite(yellow, LOW);
+      binaryRep = binaryRep + "0";
+    }
+   // For debugging 
+  String inNumRndStr = (String)inNumRnd;  
+  Serial.println((String)inNumRndCpy + " " + inNumRndStr);
 
   // Find binary representation of inNum.
   for (int n = greatestPinNumber - leastPinNumber; n >=0; n--){
@@ -82,34 +97,36 @@ void displayInBinary(float inNum){
      */
     int twoToTheN = exponentiateIntegers(2, n); // 2^n
     int remainder = inNumRnd - twoToTheN;
+    Serial.println(inNumRndStr + " " + twoToTheN);
 
-    /* // For Debugging
+     // For Debugging
     String nStr = (String)(n);
     String pinNumberStr = (String)pinNumber;
     String twoToTheNStr = (String)twoToTheN;
     String remainderStr = (String)remainder;
-    */
+    Serial.println(twoToTheNStr);
+    Serial.println(remainder);
     
     if ( remainder >= 0 ){
-      inNumRnd = inNumRnd - twoToTheN;
-      digitalWrite(pinNumber, HIGH);
-      /* // For Debugging
-      inNumRndStr = inNumRnd;
+      // For Debugging
       Serial.println(inNumRndStr + " - " + twoToTheNStr + " = " + remainderStr);
+      inNumRnd = inNumRnd - twoToTheN;
+      inNumRndStr = inNumRnd;
+      digitalWrite(pinNumber, HIGH);
       binaryRep = binaryRep + "1";
-      */
+      
     } else{
       digitalWrite(pinNumber, LOW);
-      /* // For Debugging
+       // For Debugging
       Serial.println(inNumRndStr + " - " + twoToTheNStr + " = " + remainderStr);
       binaryRep = binaryRep + "0";
-      */
+      
     }
     // For Debugging
-    //Serial.println(nStr + " " + pinNumberStr);
+    Serial.println(nStr + " " + pinNumberStr);
   }
   // For Debugging
-  //Serial.println(inNumRndStr + " " + binaryRep);
+  Serial.println(inNumRndCpyStr + " " + binaryRep);
 }
 
 /*
@@ -120,9 +137,9 @@ void displayInBinary(float inNum){
  */
 void blinkLED(int pinNum){
   digitalWrite(pinNum, HIGH);
-  delay(500);
+  delay(250);
   digitalWrite(pinNum, LOW);
-  delay(500);
+  delay(250);
 }
 
 /*
@@ -132,7 +149,7 @@ void blinkLED(int pinNum){
  *          to output and turn them off
  */
 void TurnOffPins(){
-  for (int pinNumber = leastPinNumber; pinNumber <=  red; pinNumber++){
+  for (int pinNumber = yellow; pinNumber <=  greatestPinNumber; pinNumber++){
       pinMode(pinNumber, OUTPUT);
       digitalWrite(pinNumber, LOW);
     }
@@ -153,13 +170,15 @@ int exponentiateIntegers(int x, int y){
 }
 
 /*
- * Count up to a given number from 0 and display each number in binary on LEDs
- *  INPUT - int endNum: number one wishes to count to
- * OUTPUT - display number in binary on LEDs
+ * Count from start number to end number. Both endpoints are
+ *  included in the count
+ *    INPUT - int startNum: first number in count
+ *            int endNum:   last number in count
+ *   OUTPUT - display number in binary on LEDs
  */
-void countUpFromZero(int endNum){
-  for (int n = 0; n < endNum; n++){
+void countFromStartNumToEndNum(int startPnt, int endPnt){
+  for ( int n = startPnt; n <= endPnt; n++){
     displayInBinary(n);
-    delay(500);
+    delay(250);
   }
 }
